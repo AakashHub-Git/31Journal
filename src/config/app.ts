@@ -11,4 +11,4 @@
  *   - Roots to the Main Journal App Dashboard.
  *   - All functionality is unlocked (requires authentication).
  */
-export const TRAILER_MODE: boolean = false;
+export const TRAILER_MODE: boolean = true;
