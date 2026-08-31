@@ -33,7 +33,9 @@ export default async function ProfilePage() {
 
   // Try to get name from profile, otherwise fallback to config or email
   let displayName = WALKTHROUGH_CONTENT.metadata.name;
-  const { data: profile } = await supabase.from("profiles").select("name").eq("id", user.id).single();
+  const { data } = await supabase.from("profiles").select("name").eq("id", user.id).single();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const profile: any = data;
   if (profile?.name) {
     displayName = profile.name;
   }

@@ -12,7 +12,8 @@ export async function uploadMemoryMedia(memoryId: string, files: FormData) {
   }
 
   // Iterate over all files in the FormData
-  const uploadedMedia = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const uploadedMedia: any[] = [];
   let position = 0;
 
   for (const [, value] of Array.from(files.entries())) {

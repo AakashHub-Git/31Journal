@@ -39,7 +39,8 @@ export async function createMemory(formData: FormData) {
   revalidatePath("/journal");
   revalidatePath("/memories");
   
-  return data;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return data as any;
 }
 
 export async function getMemories() {
@@ -57,5 +58,6 @@ export async function getMemories() {
     return [];
   }
 
-  return data;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data || []) as any[];
 }
