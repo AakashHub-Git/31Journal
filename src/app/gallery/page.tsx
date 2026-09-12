@@ -14,7 +14,12 @@ export default async function GalleryPage() {
         id: m.id,
         url: m.url,
         width: 800, // Hardcoded for now
-        height: 800
+        height: 800,
+        memoryTitle: memory.title || "",
+        memoryDescription: memory.description || "",
+        memoryLocation: memory.location || "",
+        mood: memory.mood,
+        memoryDate: memory.memory_date
       }));
   });
 

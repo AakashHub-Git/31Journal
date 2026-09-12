@@ -2,18 +2,16 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { MoodSelector } from "@/components/features/mood-selector";
-import { MemoryCard } from "@/components/features/memory/memory-card";
+import { MemoryMasonry } from "@/components/features/memory-masonry";
 import { IconButton } from "@/components/ui/icon-button";
 import { Settings, Plus } from "lucide-react";
 import { Mood } from "@/types";
 import { motion } from "framer-motion";
 import { staggerContainer, staggerItem } from "@/lib/animations";
+import { MemoryCard } from "@/components/features/memory/memory-card";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function ClientHome({ memories, userName }: { memories: any[], userName: string }) {
-  const [mood, setMood] = React.useState<Mood | undefined>(undefined);
-  
   const today = new Date();
   const dateString = today.toLocaleDateString("en-US", {
     weekday: 'long',
@@ -22,8 +20,45 @@ export function ClientHome({ memories, userName }: { memories: any[], userName: 
   });
   
   const recentMemories = memories.slice(0, 3);
-  const hasMemories = recentMemories.length > 0;
-  const onThisDayMemory = undefined;
+  
+  const currentMonth = today.getMonth() + 1;
+  const currentDay = today.getDate();
+  const currentYear = today.getFullYear();
+
+  const onThisDayMemories = memories.filter(memory => {
+    if (!memory.memory_date) return false;
+    const parts = memory.memory_date.split('-');
+    if (parts.length !== 3) return false;
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10);
+    const day = parseInt(parts[2], 10);
+    
+    return month === currentMonth && day === currentDay && year < currentYear;
+  });
+
+  const onThisDayMemory = onThisDayMemories.length > 0 ? onThisDayMemories[0] : undefined;
+
+  // Helper to map DB memory to MemoryCard props
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mapMemory = (memory: any) => ({
+    id: memory.id,
+    title: memory.title || "",
+    description: memory.description || "",
+    date: memory.memory_date,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    photos: (memory.memory_media || []).filter((m: any) => m.type === 'image').map((m: any) => ({
+      id: m.id,
+      url: m.url,
+      width: 800,
+      height: 800,
+      dateAdded: memory.memory_date
+    })),
+    videos: [],
+    mood: memory.mood as Mood | undefined,
+    location: memory.location,
+    tags: [],
+    isFavorite: memory.is_favorite
+  });
 
   return (
     <div className="flex flex-col min-h-screen bg-background pb-32">
@@ -41,23 +76,18 @@ export function ClientHome({ memories, userName }: { memories: any[], userName: 
         variants={staggerContainer}
         initial="initial"
         animate="animate"
-        className="px-8 flex flex-col gap-14"
+        className="px-6 flex flex-col gap-10"
       >
         
-        {/* 1. Greeting & Mood */}
-        <motion.section variants={staggerItem} className="flex flex-col gap-8">
+        {/* 1. Greeting */}
+        <motion.section variants={staggerItem} className="flex flex-col gap-4">
           <div>
-            <h1 className="text-4xl font-semibold tracking-tight text-foreground mb-2">
-              Good morning, {userName}.
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground mb-1">
+              Hi, {userName}.
             </h1>
             <p className="font-handwriting text-2xl text-primary/80">
               {dateString}
             </p>
-          </div>
-
-          <div className="flex flex-col gap-4">
-            <h2 className="text-lg font-medium text-muted-foreground">How are you feeling today?</h2>
-            <MoodSelector value={mood} onChange={setMood} />
           </div>
         </motion.section>
 
@@ -67,47 +97,28 @@ export function ClientHome({ memories, userName }: { memories: any[], userName: 
             <motion.div 
               whileHover={{ scale: 0.98 }}
               whileTap={{ scale: 0.95 }}
-              className="w-full bg-primary/10 border border-primary/20 rounded-3xl p-6 flex flex-col items-center justify-center text-center gap-4 transition-colors hover:bg-primary/15"
+              className="w-full bg-primary border-2 border-primary/20 rounded-xl p-4 flex items-center justify-center gap-3 transition-colors hover:bg-primary/90 text-white shadow-paper"
             >
-              <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-paper">
-                <Plus className="w-6 h-6" />
-              </div>
-              <h2 className="text-xl font-medium text-primary">Add today&apos;s little moment</h2>
+              <Plus className="w-6 h-6" />
+              <h2 className="text-lg font-medium">Add a cute memory</h2>
             </motion.div>
           </Link>
         </motion.section>
 
         {/* 3. Recent Memories */}
-        <motion.section variants={staggerItem} className="flex flex-col gap-6">
-          <h2 className="text-2xl font-medium tracking-tight">Your little moments</h2>
+        <motion.section variants={staggerItem} className="flex flex-col gap-4">
+          <div className="flex justify-between items-end pl-1">
+            <h2 className="text-xl font-medium tracking-tight">Recent Memories</h2>
+            <Link href="/journal" className="text-xs text-primary font-medium hover:underline">
+              View all
+            </Link>
+          </div>
           
-          {hasMemories ? (
-            <div className="flex flex-col gap-10">
-              {recentMemories.map((memory) => {
-                // Map the DB memory to what MemoryCard expects
-                const mappedMemory = {
-                  id: memory.id,
-                  title: memory.title || "",
-                  description: memory.description || "",
-                  date: memory.memory_date,
-                  photos: (memory.memory_media || []).filter((m: { type: string }) => m.type === 'image').map((m: { id: string, url: string }) => ({
-                    id: m.id,
-                    url: m.url,
-                    width: 800,
-                    height: 800
-                  })),
-                  videos: [],
-                  mood: memory.mood as Mood | undefined,
-                  location: memory.location,
-                  tags: [],
-                  isFavorite: memory.is_favorite
-                };
-                return <MemoryCard key={memory.id} memory={mappedMemory} />;
-              })}
-            </div>
+          {recentMemories.length > 0 ? (
+            <MemoryMasonry memories={recentMemories.map(mapMemory)} />
           ) : (
-            <div className="py-8 border-t border-b border-border/50 text-center">
-              <p className="text-muted-foreground font-handwriting text-2xl">
+            <div className="py-8 border border-border/50 rounded-xl text-center bg-card">
+              <p className="text-muted-foreground font-handwriting text-xl">
                 Your diary awaits its first memory.
               </p>
             </div>
@@ -115,32 +126,23 @@ export function ClientHome({ memories, userName }: { memories: any[], userName: 
         </motion.section>
 
         {/* 4. On This Day */}
-        <motion.section variants={staggerItem} className="flex flex-col gap-6">
-          <h2 className="text-2xl font-medium tracking-tight">On this day</h2>
+        <motion.section variants={staggerItem} className="flex flex-col gap-4">
+          <h2 className="text-xl font-medium tracking-tight pl-1">On this day</h2>
           
           {onThisDayMemory ? (
-            <div>
+            <div className="flex flex-col gap-4">
+              <p className="text-sm font-medium text-primary uppercase tracking-widest pl-1">
+                {currentYear - parseInt(onThisDayMemory.memory_date.split('-')[0], 10)} year(s) ago
+              </p>
+              <MemoryCard memory={mapMemory(onThisDayMemory)} priority={true} />
             </div>
           ) : (
-            <div className="py-10 bg-secondary/10 rounded-3xl border border-secondary/20 text-center px-6">
-              <p className="text-muted-foreground font-handwriting text-2xl leading-relaxed">
+            <div className="py-8 bg-secondary/10 rounded-xl border border-secondary/20 text-center px-4">
+              <p className="text-muted-foreground font-handwriting text-xl leading-relaxed">
                 This space will hold your memories from today, next year.
               </p>
             </div>
           )}
-        </motion.section>
-
-        {/* 5. This Month */}
-        <motion.section variants={staggerItem} className="flex flex-col gap-6 mb-8">
-          <h2 className="text-2xl font-medium tracking-tight">This month</h2>
-          <div className="p-6 border-l-2 border-primary/30">
-            <p className="text-lg leading-relaxed text-foreground/80">
-              You&apos;ve captured {memories.length} moments so far.
-            </p>
-            <Link href="/journal" className="inline-block mt-4 text-primary font-medium hover:underline decoration-primary/50 underline-offset-4">
-              View your timeline
-            </Link>
-          </div>
         </motion.section>
 
       </motion.main>

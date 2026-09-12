@@ -1,23 +1,88 @@
 @import "tailwindcss";
 
-:root {
-  --background: #FDFCF8; /* Soft warm cream */
-  --foreground: #3F3931; /* Deep brown-grey */
+:root, [data-theme="pastel"] {
+  --background: #FFF8F9; /* Very soft pastel pink/cream */
+  --foreground: #4A4045; /* Soft brownish-grey */
   
   --card: #FFFFFF;
-  --card-foreground: #3F3931;
+  --card-foreground: #4A4045;
   
-  --primary: #D47A6A; /* Terracotta / red hint */
+  --primary: #F4A5AE; /* Cute soft pink */
   --primary-foreground: #FFFFFF;
   
-  --secondary: #E6B869; /* Warm mustard / yellow hint */
-  --secondary-foreground: #3F3931;
+  --secondary: #BBD5E8; /* Soft pastel blue/lavender */
+  --secondary-foreground: #4A4045;
   
-  --muted: #F5F2ED;
-  --muted-foreground: #8A8276;
+  --muted: #F8EDEF; /* Muted pink/cream */
+  --muted-foreground: #9A8A92;
   
-  --border: #EAE4DB;
+  --border: #F0DEE3;
 }
+
+[data-theme="stranger-things"] {
+  --background: #000000;
+  --foreground: #F5F5F5;
+  
+  --card: #111111;
+  --card-foreground: #F5F5F5;
+  
+  --primary: #FF0000; /* Red */
+  --primary-foreground: #000000;
+  
+  --secondary: #0a0a0a;
+  --secondary-foreground: #FFFFFF;
+  
+  --muted: #222222;
+  --muted-foreground: #888888;
+  
+  --border: #333333;
+}
+
+[data-theme="ocean"] {
+  --background: #F0F8FF;
+  --foreground: #1E3A8A;
+  
+  --card: #FFFFFF;
+  --card-foreground: #1E3A8A;
+  
+  --primary: #3B82F6;
+  --primary-foreground: #FFFFFF;
+  
+  --secondary: #DBEAFE;
+  --secondary-foreground: #1E3A8A;
+  
+  --muted: #F1F5F9;
+  --muted-foreground: #64748B;
+  
+  --border: #E2E8F0;
+}
+
+[data-theme="dark-elegance"] {
+  --background: #121212;
+  --foreground: #E0E0E0;
+  
+  --card: #1E1E1E;
+  --card-foreground: #E0E0E0;
+  
+  --primary: #BB86FC;
+  --primary-foreground: #000000;
+  
+  --secondary: #03DAC6;
+  --secondary-foreground: #000000;
+  
+  --muted: #2A2A2A;
+  --muted-foreground: #A0A0A0;
+  
+  --border: #333333;
+}
+
+/* App Settings - Image Shapes */
+:root {
+  --app-image-radius: 1rem; /* rounded-2xl default */
+}
+[data-image-shape="rounded-sm"] { --app-image-radius: 0.25rem; }
+[data-image-shape="rounded-2xl"] { --app-image-radius: 1rem; }
+[data-image-shape="rounded-full"] { --app-image-radius: 9999px; }
 
 @theme inline {
   --color-background: var(--background);
@@ -50,6 +115,27 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.5s ease, color 0.5s ease;
+}
+
+/* Font Style Overrides */
+[data-font-style="serif"] body { font-family: var(--font-serif); }
+[data-font-style="handwriting"] body { font-family: var(--font-handwriting); font-size: 1.25rem; }
+
+/* Dynamic Image Shape Utility */
+.app-image {
+  border-radius: var(--app-image-radius) !important;
+  transition: border-radius 0.5s ease;
+}
+
+/* Dynamic Animation Utility */
+[data-animation="none"] * {
+  transition-duration: 0ms !important;
+  animation-duration: 0ms !important;
+}
+[data-animation="bouncy"] .hover-animate:hover {
+  transform: scale(1.1) rotate(2deg) !important;
+  transition-timing-function: cubic-bezier(0.68, -0.55, 0.265, 1.55) !important;
 }
 
 /* Remove default scrollbar for sleekness, or style it minimally */

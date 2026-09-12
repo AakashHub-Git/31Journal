@@ -37,7 +37,7 @@ export function PhotoMemory({
       whileInView="animate"
       viewport={{ once: true, margin: "-50px" }}
       className={cn(
-        "relative w-full rounded-2xl overflow-hidden bg-muted/30 shadow-sm",
+        "relative w-full overflow-hidden bg-muted/30 shadow-sm app-image",
         aspectClasses[aspectRatio],
         onClick && "cursor-pointer group",
         className
@@ -55,6 +55,7 @@ export function PhotoMemory({
         )}
         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         priority={priority}
+        loading={priority ? "eager" : undefined}
       />
       {onClick && (
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />

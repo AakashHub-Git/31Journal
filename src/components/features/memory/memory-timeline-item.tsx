@@ -12,9 +12,10 @@ import { motion } from "framer-motion";
 interface MemoryTimelineItemProps {
   entry: JournalEntry;
   isLast?: boolean;
+  priority?: boolean;
 }
 
-export function MemoryTimelineItem({ entry, isLast }: MemoryTimelineItemProps) {
+export function MemoryTimelineItem({ entry, isLast, priority = false }: MemoryTimelineItemProps) {
   const [activePhoto, setActivePhoto] = React.useState<Photo | null>(null);
 
   const dateStr = new Date(entry.date).toLocaleDateString("en-US", {
@@ -62,11 +63,12 @@ export function MemoryTimelineItem({ entry, isLast }: MemoryTimelineItemProps) {
 
           {entry.photos && entry.photos.length > 0 && (
             <div className="mt-2 grid grid-cols-2 gap-2">
-              {entry.photos.slice(0, 2).map(photo => (
+              {entry.photos.slice(0, 2).map((photo, i) => (
                 <PhotoMemory 
                   key={photo.id} 
                   photo={photo} 
                   aspectRatio="landscape"
+                  priority={priority && i === 0}
                   onClick={() => setActivePhoto(photo)}
                 />
               ))}

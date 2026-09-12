@@ -1,19 +1,27 @@
-import { TRAILER_MODE } from "@/config/app";
-import TrailerPage from "./trailer/page";
 import { getMemories } from "./actions/journal";
 import { ClientHome } from "./client-home";
-import { WALKTHROUGH_CONTENT } from "@/config/walkthrough";
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 
 export default async function RootPage() {
-  if (TRAILER_MODE) {
-    return <TrailerPage />;
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
   }
-  
+
   const memories = await getMemories();
   
-  // Get user profile if needed, or just use config name
-  // For now we'll use the gift config name for that personal touch
-  const userName = WALKTHROUGH_CONTENT.metadata.name || "Jane";
+  // Try to get name from profile
+  let userName = "Journaler";
+  const { data } = await supabase.from("profiles").select("name").eq("id", user.id).single();
+  
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const profile: any = data;
+  if (profile?.name) {
+    userName = profile.name;
+  }
   
   return <ClientHome memories={memories} userName={userName} />;
 }

@@ -10,6 +10,8 @@ import { ArrowLeft, Image as ImageIcon, MapPin, Tag, Calendar, X } from "lucide-
 import { Mood } from "@/types";
 import { createMemory } from "@/app/actions/journal";
 import { uploadMemoryMedia } from "@/app/actions/storage";
+import { JournalCamera } from "@/components/camera/JournalCamera";
+import { Camera } from "lucide-react";
 /* eslint-disable @next/next/no-img-element */
 
 export default function NewJournalPage() {
@@ -25,6 +27,10 @@ export default function NewJournalPage() {
   const [previews, setPreviews] = React.useState<string[]>([]);
   
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [progress, setProgress] = React.useState(0);
+  const [loadingText, setLoadingText] = React.useState("Saving memory...");
+  
+  const [isCameraOpen, setIsCameraOpen] = React.useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -44,10 +50,23 @@ export default function NewJournalPage() {
     });
   };
 
+  const handleCapture = (file: File) => {
+    setFiles((prev) => [...prev, file]);
+    const src = URL.createObjectURL(file);
+    setPreviews((prev) => [...prev, src]);
+  };
+
   const handleSave = async () => {
     if (!description.trim() && !files.length && !title.trim()) return;
     
     setIsSubmitting(true);
+    setProgress(10);
+    setLoadingText("Wrapping up your thoughts...");
+    
+    // Simulate gradual progress while waiting for server
+    const interval = setInterval(() => {
+      setProgress((p) => (p < 85 ? p + Math.random() * 8 : p));
+    }, 400);
     
     try {
       const formData = new FormData();
@@ -62,6 +81,8 @@ export default function NewJournalPage() {
       
       // If there are files, upload them attached to the new memory
       if (files.length > 0 && memory?.id) {
+        setProgress(40);
+        setLoadingText("Uploading your photos...");
         const mediaFormData = new FormData();
         files.forEach((file) => {
           mediaFormData.append("files", file);
@@ -70,12 +91,21 @@ export default function NewJournalPage() {
         await uploadMemoryMedia(memory.id, mediaFormData);
       }
 
-      router.push("/");
-      router.refresh();
+      clearInterval(interval);
+      setProgress(100);
+      setLoadingText("Safely tucked away! ✨");
+
+      // Give them a moment to see the 100% success
+      setTimeout(() => {
+        router.push("/");
+        router.refresh();
+      }, 800);
       
     } catch (error) {
+      clearInterval(interval);
       console.error("Failed to save memory:", error);
       setIsSubmitting(false);
+      setProgress(0);
     }
   };
 
@@ -162,9 +192,16 @@ export default function NewJournalPage() {
           </div>
 
           <div className="flex flex-wrap gap-3">
+            <button 
+              onClick={() => setIsCameraOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors cursor-pointer"
+            >
+              <Camera className="w-4 h-4" />
+              Take Photo
+            </button>
             <label className="flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-card text-sm font-medium hover:bg-muted transition-colors cursor-pointer">
               <ImageIcon className="w-4 h-4 text-primary" />
-              Add Photo
+              Upload Photo
               <input 
                 type="file" 
                 accept="image/*,video/*" 
@@ -180,6 +217,39 @@ export default function NewJournalPage() {
           </div>
         </div>
       </main>
+
+      {/* Cute Saving Overlay */}
+      {isSubmitting && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-md px-8 animate-in fade-in duration-300">
+          <div className="w-20 h-20 mb-6 bg-muted rounded-full flex items-center justify-center">
+            {progress < 100 ? (
+              <svg className="w-10 h-10 text-primary animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+            ) : (
+              <svg className="w-10 h-10 text-green-500 animate-in zoom-in duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+          </div>
+          
+          <h2 className="text-xl font-medium mb-8 text-center">{loadingText}</h2>
+          
+          <div className="w-full max-w-xs h-3 bg-muted rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-primary transition-all duration-300 ease-out"
+              style={{ width: `${Math.min(progress, 100)}%` }}
+            />
+          </div>
+          <p className="mt-3 text-sm text-muted-foreground font-medium">{Math.floor(Math.min(progress, 100))}%</p>
+        </div>
+      )}
+
+      <JournalCamera 
+        open={isCameraOpen}
+        onClose={() => setIsCameraOpen(false)}
+        onCapture={handleCapture}
+      />
     </div>
   );
 }

@@ -8,9 +8,10 @@ import { cn } from "@/lib/utils";
 interface PhotoGridProps extends React.HTMLAttributes<HTMLDivElement> {
   photos?: Photo[];
   onPhotoClick?: (photo: Photo) => void;
+  priority?: boolean;
 }
 
-export function PhotoGrid({ photos, onPhotoClick, className, ...props }: PhotoGridProps) {
+export function PhotoGrid({ photos, onPhotoClick, priority = false, className, ...props }: PhotoGridProps) {
   if (!photos || photos.length === 0) return null;
 
   // Single Photo
@@ -20,6 +21,7 @@ export function PhotoGrid({ photos, onPhotoClick, className, ...props }: PhotoGr
         <PhotoMemory 
           photo={photos[0]} 
           aspectRatio="portrait" 
+          priority={priority}
           onClick={() => onPhotoClick?.(photos[0])} 
         />
       </div>
@@ -30,11 +32,12 @@ export function PhotoGrid({ photos, onPhotoClick, className, ...props }: PhotoGr
   if (photos.length === 2) {
     return (
       <div className={cn("grid grid-cols-2 gap-2 w-full", className)} {...props}>
-        {photos.map((photo) => (
+        {photos.map((photo, i) => (
           <PhotoMemory 
             key={photo.id}
             photo={photo} 
             aspectRatio="square" 
+            priority={priority && i === 0}
             onClick={() => onPhotoClick?.(photo)} 
           />
         ))}
@@ -50,6 +53,7 @@ export function PhotoGrid({ photos, onPhotoClick, className, ...props }: PhotoGr
         <PhotoMemory 
           photo={photos[0]} 
           aspectRatio="landscape" 
+          priority={priority}
           onClick={() => onPhotoClick?.(photos[0])} 
         />
       </div>

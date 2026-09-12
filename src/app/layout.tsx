@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Outfit, Caveat, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { ClientLayout } from "@/components/layout/client-layout";
+import { AppProvider } from "@/components/layout/app-provider";
 
 const outfit = Outfit({
   variable: "--font-outfit",
@@ -31,10 +32,13 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${outfit.variable} ${caveat.variable} ${playfair.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-background text-foreground flex flex-col">
-        <ClientLayout>{children}</ClientLayout>
+        <AppProvider>
+          <ClientLayout>{children}</ClientLayout>
+        </AppProvider>
       </body>
     </html>
   );

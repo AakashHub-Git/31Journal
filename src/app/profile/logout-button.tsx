@@ -21,7 +21,7 @@ export function LogoutButton() {
     <button 
       onClick={handleLogout}
       disabled={loading}
-      className="flex items-center gap-3 p-4 hover:bg-red-50 text-red-600 transition-colors text-left w-full"
+      className="flex items-center gap-3 p-4 hover:bg-primary/10 text-primary transition-colors text-left w-full font-bold"
     >
       <LogOut className="w-5 h-5" />
       <span className="font-medium">{loading ? "Logging out..." : "Log out"}</span>
