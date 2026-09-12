@@ -83,7 +83,7 @@ export function ClientHome({ memories, userName }: { memories: any[], userName: 
         <motion.section variants={staggerItem} className="flex flex-col gap-4">
           <div>
             <h1 className="text-3xl font-semibold tracking-tight text-foreground mb-1">
-              Hi, {userName}.
+              Hiii, {userName}.
             </h1>
             <p className="font-handwriting text-2xl text-primary/80">
               {dateString}

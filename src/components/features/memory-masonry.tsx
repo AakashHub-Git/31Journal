@@ -53,8 +53,12 @@ export function MemoryMasonry({ memories }: { memories: Memory[] }) {
     >
       {columnData.map((col, colIndex) => (
         <div key={colIndex} className="flex flex-col gap-4 flex-1">
-          {col.map((memory) => (
-            <MemoryCard key={memory.id} memory={memory} />
+          {col.map((memory, memIndex) => (
+            <MemoryCard 
+              key={memory.id} 
+              memory={memory} 
+              priority={colIndex === 0 && memIndex === 0} 
+            />
           ))}
         </div>
       ))}

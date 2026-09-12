@@ -56,8 +56,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     document.documentElement.setAttribute("data-font-style", settings.fontStyle);
   }, [settings, mounted]);
 
-  if (!mounted) return <>{children}</>;
-
   return (
     <ThemeProvider attribute="data-theme" defaultTheme="pastel" enableSystem={false}>
       <AppSettingsContext.Provider value={{ settings, updateSettings }}>

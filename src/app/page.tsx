@@ -14,7 +14,7 @@ export default async function RootPage() {
   const memories = await getMemories();
   
   // Try to get name from profile
-  let userName = "Journaler";
+  let userName = "Sweetttyyy";
   const { data } = await supabase.from("profiles").select("name").eq("id", user.id).single();
   
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

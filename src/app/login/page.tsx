@@ -77,8 +77,8 @@ export default function LoginPage() {
       <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden">
         <motion.div
           initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: [0, 1.2, 1], opacity: 1 }}
-          transition={{ duration: 0.6, type: "spring" }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.6, type: "spring", bounce: 0.6 }}
           className="flex flex-col items-center justify-center text-primary z-10"
         >
           <Heart className="w-32 h-32 fill-primary animate-pulse" />

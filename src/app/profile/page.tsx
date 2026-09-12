@@ -26,7 +26,7 @@ export default async function ProfilePage() {
   });
 
   // Try to get name from profile
-  let displayName = "Sweety";
+  let displayName = "Sweetttyyy";
   const { data } = await supabase.from("profiles").select("name").eq("id", user.id).single();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const profile: any = data;

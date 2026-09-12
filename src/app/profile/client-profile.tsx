@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { Section } from "@/components/ui/section";
-import { User, Bell, Shield, Palette, Sparkles, Type, Square, Play, ArrowLeft } from "lucide-react";
+import { Bell, Shield, Palette, Sparkles, Type, Square, Play, ArrowLeft } from "lucide-react";
 import { LogoutButton } from "./logout-button";
 import Link from "next/link";
 import { IconButton } from "@/components/ui/icon-button";
@@ -47,12 +48,14 @@ export function ClientProfile({ displayName, joinedDate, memoriesCount, mediaCou
           <motion.div
             whileHover={{ scale: 1.1, rotate: 5 }}
             whileTap={{ scale: 0.95 }}
-            className="w-28 h-28 rounded-full bg-card border-4 border-background shadow-xl flex items-center justify-center mb-5 relative z-10 hover-animate"
+            className="w-28 h-28 rounded-full bg-card border-4 border-background shadow-xl flex items-center justify-center mb-5 relative z-10 hover-animate overflow-hidden"
           >
-            <img
-              src="images/PXL_20250926_141541164.MP~2.jpg"  // replace with your actual image path
+            <Image
+              src="/images/PXL_20250926_141541164.MP~2.jpg"
               alt="Profile picture"
-              className="w-full h-full object-cover rounded-full"
+              fill
+              className="object-cover rounded-full"
+              priority
             />
           </motion.div>
 
