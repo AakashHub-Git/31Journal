@@ -20,8 +20,8 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Digital Journal",
-  description: "A private, beautiful, mobile-first digital journal and memory application",
+  title: "Sweety's Journal ✨",
+  description: "A private, beautiful digital journal and memory application",
 };
 
 export default function RootLayout({
