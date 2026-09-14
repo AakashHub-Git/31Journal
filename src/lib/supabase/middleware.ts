@@ -12,8 +12,13 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/auth')
 
+  const isPublicAsset = pathname === '/favicon.ico' || 
+                        pathname === '/manifest.webmanifest' || 
+                        pathname.endsWith('.png') || 
+                        pathname.startsWith('/_next')
+
   if (!url || !anonKey) {
-    if (!isAuthRoute && pathname !== '/favicon.ico' && !pathname.startsWith('/_next')) {
+    if (!isAuthRoute && !isPublicAsset) {
       const redirectUrl = request.nextUrl.clone()
       redirectUrl.pathname = '/login'
       return NextResponse.redirect(redirectUrl)
@@ -52,8 +57,8 @@ export async function updateSession(request: NextRequest) {
     user = null
   }
 
-  // Require auth for everything except login, auth, favicon, and nextjs assets
-  if (!user && !isAuthRoute && pathname !== '/favicon.ico' && !pathname.startsWith('/_next')) {
+  // Require auth for everything except login, auth, and public assets
+  if (!user && !isAuthRoute && !isPublicAsset) {
     const redirectUrl = request.nextUrl.clone()
     redirectUrl.pathname = '/login'
     return NextResponse.redirect(redirectUrl)

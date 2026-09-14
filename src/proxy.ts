@@ -8,6 +8,6 @@ export async function proxy(request: NextRequest) {
 // Ensure the proxy only runs on necessary routes
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|assets).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|manifest.webmanifest|.*\\.png$|assets).*)',
   ],
 };
