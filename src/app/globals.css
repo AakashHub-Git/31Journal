@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 :root, [data-theme="pastel"] {
   --background: #FFF8F9; /* Very soft pastel pink/cream */

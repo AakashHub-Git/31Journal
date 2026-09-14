@@ -9,6 +9,7 @@ import { Mood } from "@/types";
 import { motion } from "framer-motion";
 import { staggerContainer, staggerItem } from "@/lib/animations";
 import { MemoryCard } from "@/components/features/memory/memory-card";
+import { MonthlyWrappedCard } from "@/components/features/ai/monthly-wrapped-card";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function ClientHome({ memories, userName }: { memories: any[], userName: string }) {
@@ -89,6 +90,11 @@ export function ClientHome({ memories, userName }: { memories: any[], userName: 
               {dateString}
             </p>
           </div>
+        </motion.section>
+
+        {/* 1.5 Monthly Wrapped */}
+        <motion.section variants={staggerItem}>
+          <MonthlyWrappedCard />
         </motion.section>
 
         {/* 2. Primary Action */}

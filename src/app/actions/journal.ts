@@ -39,18 +39,91 @@ export async function createMemory(formData: FormData) {
   revalidatePath("/journal");
   revalidatePath("/memories");
   
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return data as any;
+}
+
+export async function updateMemory(id: string, formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
+
+  const title = formData.get("title") as string;
+  const description = formData.get("description") as string;
+  const memoryDate = formData.get("memory_date") as string;
+  const location = formData.get("location") as string;
+  const mood = formData.get("mood") as string;
+
+  const { data, error } = await supabase
+    .from("memories")
+    .update({
+      title: title || null,
+      description: description || null,
+      memory_date: memoryDate || new Date().toISOString().split('T')[0],
+      location: location || null,
+      mood: mood || null,
+    })
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/");
+  revalidatePath("/journal");
+  revalidatePath("/memories");
+  revalidatePath(`/journal/${id}`);
+  
+  return data as any;
+}
+
+export async function deleteMemory(id: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
+
+  const { error } = await supabase
+    .from("memories")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.id);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/");
+  revalidatePath("/journal");
+  revalidatePath("/memories");
+  
+  return true;
+}
+
+export async function getMemory(id: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("memories")
+    .select(`*, memory_media (*)`)
+    .eq("id", id)
+    .single();
+
+  if (error) return null;
+  return data;
 }
 
 export async function getMemories() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("memories")
-    .select(`
-      *,
-      memory_media (*)
-    `)
+    .select(`*, memory_media (*)`)
     .order('memory_date', { ascending: false });
 
   if (error) {
@@ -58,6 +131,5 @@ export async function getMemories() {
     return [];
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (data || []) as any[];
 }

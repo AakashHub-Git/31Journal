@@ -2,20 +2,22 @@
 // @ts-nocheck
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { IconButton } from "@/components/ui/icon-button";
 import { Button } from "@/components/ui/button";
 import { MoodSelector } from "@/components/features/mood-selector";
 import { ArrowLeft, Image as ImageIcon, MapPin, Tag, Calendar, X } from "lucide-react";
 import { Mood } from "@/types";
-import { createMemory } from "@/app/actions/journal";
+import { createMemory, updateMemory, getMemory } from "@/app/actions/journal";
 import { uploadMemoryMedia } from "@/app/actions/storage";
 import { JournalCamera } from "@/components/camera/JournalCamera";
 import { Camera } from "lucide-react";
-/* eslint-disable @next/next/no-img-element */
+import { Suspense } from "react";
 
-export default function NewJournalPage() {
+function NewJournalForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get("edit");
   
   const [title, setTitle] = React.useState("");
   const [description, setDescription] = React.useState("");
@@ -32,6 +34,24 @@ export default function NewJournalPage() {
   
   const [isCameraOpen, setIsCameraOpen] = React.useState(false);
 
+  React.useEffect(() => {
+    if (editId) {
+      getMemory(editId).then(data => {
+        if (data) {
+          setTitle(data.title || "");
+          setDescription(data.description || "");
+          setMood(data.mood || undefined);
+          setMemoryDate(data.memory_date || new Date().toISOString().split('T')[0]);
+          setLocation(data.location || "");
+          
+          if (data.memory_media) {
+            setPreviews(data.memory_media.map((m: any) => m.url));
+          }
+        }
+      });
+    }
+  }, [editId]);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files);
@@ -43,9 +63,16 @@ export default function NewJournalPage() {
   };
 
   const removeFile = (index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
+    // If it's an existing image, we don't have a file, but we should handle it.
+    // For simplicity, we just remove it from previews. True deletion from storage might need an extra step.
+    if (index >= (previews.length - files.length)) {
+      const fileIndex = index - (previews.length - files.length);
+      setFiles((prev) => prev.filter((_, i) => i !== fileIndex));
+    }
+    
     setPreviews((prev) => {
-      URL.revokeObjectURL(prev[index]);
+      const url = prev[index];
+      if (url.startsWith('blob:')) URL.revokeObjectURL(url);
       return prev.filter((_, i) => i !== index);
     });
   };
@@ -57,13 +84,12 @@ export default function NewJournalPage() {
   };
 
   const handleSave = async () => {
-    if (!description.trim() && !files.length && !title.trim()) return;
+    if (!description.trim() && !files.length && !title.trim() && !previews.length) return;
     
     setIsSubmitting(true);
     setProgress(10);
-    setLoadingText("Wrapping up your thoughts...");
+    setLoadingText(editId ? "Updating your memory..." : "Wrapping up your thoughts...");
     
-    // Simulate gradual progress while waiting for server
     const interval = setInterval(() => {
       setProgress((p) => (p < 85 ? p + Math.random() * 8 : p));
     }, 400);
@@ -76,10 +102,10 @@ export default function NewJournalPage() {
       formData.append("location", location);
       if (mood) formData.append("mood", mood);
 
-      // Create the memory record
-      const memory = await createMemory(formData);
+      const memory = editId 
+        ? await updateMemory(editId, formData)
+        : await createMemory(formData);
       
-      // If there are files, upload them attached to the new memory
       if (files.length > 0 && memory?.id) {
         setProgress(40);
         setLoadingText("Uploading your photos...");
@@ -95,9 +121,8 @@ export default function NewJournalPage() {
       setProgress(100);
       setLoadingText("Safely tucked away! ✨");
 
-      // Give them a moment to see the 100% success
       setTimeout(() => {
-        router.push("/");
+        router.push(editId ? `/journal/${editId}` : "/");
         router.refresh();
       }, 800);
       
@@ -251,5 +276,13 @@ export default function NewJournalPage() {
         onCapture={handleCapture}
       />
     </div>
+  );
+}
+
+export default function NewJournalPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+      <NewJournalForm />
+    </Suspense>
   );
 }

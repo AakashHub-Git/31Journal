@@ -7,6 +7,8 @@ import Link from "next/link";
 import { Mood } from "@/types";
 import { ClientJournalView } from "./client-journal-view";
 
+import { JournalOptions } from "@/components/features/journal/journal-options";
+
 const MOOD_EMOJIS: Record<string, string> = {
   happy: "😊",
   calm: "😌",
@@ -78,7 +80,7 @@ export default async function JournalEntryPage({
           </IconButton>
         </Link>
         <span className="font-handwriting text-xl text-primary">{memoryData.date}</span>
-        <div className="w-10"></div> {/* Placeholder for balance */}
+        <JournalOptions id={memoryData.id} />
       </header>
 
       <main className="px-6 py-8 flex flex-col gap-6 max-w-lg mx-auto w-full">
