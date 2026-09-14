@@ -9,29 +9,7 @@ import { unstable_cache } from "next/cache";
 const MODEL_NAME = "gemini-3.6-flash";
 
 const generateWrappedAiCached = unstable_cache(
-  async (userId: string, year: number, month: number, maxDay: number) => {
-    // We create a fresh client here inside the cache function just to fetch memories securely
-    const supabase = await createClient();
-
-    // Fetch all memories for the given month, up to maxDay
-    const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-    const endDate = `${year}-${String(month).padStart(2, '0')}-${String(maxDay).padStart(2, '0')}`;
-
-    const { data: memories } = await supabase
-      .from("memories")
-      .select("id, title, description, mood, memory_date")
-      .gte("memory_date", startDate)
-      .lte("memory_date", endDate)
-      .eq("user_id", userId);
-
-    if (!memories || memories.length === 0) {
-      return null;
-    }
-
-    const memoryContext = memories.map(m => 
-      `[ID: ${m.id}] Date: ${m.memory_date} | Title: ${m.title} | Mood: ${m.mood || 'neutral'}\nDesc: ${m.description}`
-    ).join("\n\n");
-
+  async (userId: string, memoryContext: string, maxDay: number) => {
     const prompt = `You are an AI generating a "Monthly Wrapped" summary for a personal journal. 
 Based on the following journal entries from this month (up to day ${maxDay}), generate a JSON response summarizing their month so far.
 Do not include any markdown formatting like \`\`\`json, just return the raw JSON object.
@@ -87,9 +65,29 @@ export async function generateMonthlyWrapped(year: number, month: number) {
     maxDay = Math.max(1, today.getDate() - 1);
   }
 
+  // Fetch all memories for the given month, up to maxDay OUTSIDE the cache scope
+  // This is required because unstable_cache cannot contain cookies() / dynamic functions
+  const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+  const endDate = `${year}-${String(month).padStart(2, '0')}-${String(maxDay).padStart(2, '0')}`;
+
+  const { data: memories } = await supabase
+    .from("memories")
+    .select("id, title, description, mood, memory_date")
+    .gte("memory_date", startDate)
+    .lte("memory_date", endDate)
+    .eq("user_id", user.id);
+
+  if (!memories || memories.length === 0) {
+    return null;
+  }
+
+  const memoryContext = memories.map(m => 
+    `[ID: ${m.id}] Date: ${m.memory_date} | Title: ${m.title} | Mood: ${m.mood || 'neutral'}\nDesc: ${m.description}`
+  ).join("\n\n");
+
   // We catch errors HERE so we don't crash the UI, but it guarantees failures are never cached!
   try {
-    return await generateWrappedAiCached(user.id, year, month, maxDay);
+    return await generateWrappedAiCached(user.id, memoryContext, maxDay);
   } catch (error) {
     console.error("Failed to generate wrapped AI cached data:", error);
     return null;
