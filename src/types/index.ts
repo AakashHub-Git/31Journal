@@ -75,3 +75,15 @@ export interface RelationshipMemory extends Memory {
   anniversaryYear?: number;
   specialSignificance?: string;
 }
+
+export interface JournalDraft {
+  id: string;
+  title: string;
+  description: string;
+  mood?: Mood;
+  memoryDate: string;
+  location: string;
+  createdAt: number;
+  updatedAt: number;
+  editMemoryId?: string;
+}

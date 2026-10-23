@@ -6,18 +6,21 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { IconButton } from "@/components/ui/icon-button";
 import { Button } from "@/components/ui/button";
 import { MoodSelector } from "@/components/features/mood-selector";
-import { ArrowLeft, Image as ImageIcon, MapPin, Tag, Calendar, X } from "lucide-react";
-import { Mood } from "@/types";
+import { ArrowLeft, Image as ImageIcon, MapPin, Tag, Calendar, X, Camera, FolderOpen } from "lucide-react";
+import { Mood, JournalDraft } from "@/types";
 import { createMemory, updateMemory, getMemory } from "@/app/actions/journal";
 import { uploadMemoryMedia } from "@/app/actions/storage";
 import { JournalCamera } from "@/components/camera/JournalCamera";
-import { Camera } from "lucide-react";
+import { useJournalDraft } from "@/hooks/use-journal-draft";
+import { DraftStatusBadge } from "@/components/features/journal/draft-status-badge";
+import { DraftBanner } from "@/components/features/journal/draft-banner";
 import { Suspense } from "react";
 
 function NewJournalForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editId = searchParams.get("edit");
+  const draftId = searchParams.get("draftId");
   
   const [title, setTitle] = React.useState("");
   const [description, setDescription] = React.useState("");
@@ -33,9 +36,46 @@ function NewJournalForm() {
   const [loadingText, setLoadingText] = React.useState("Saving memory...");
   
   const [isCameraOpen, setIsCameraOpen] = React.useState(false);
+  const [isLoadingEdit, setIsLoadingEdit] = React.useState(Boolean(editId));
 
+  // Handle restoring draft values
+  const handleRestoreDraft = React.useCallback((draft: JournalDraft) => {
+    setTitle(draft.title || "");
+    setDescription(draft.description || "");
+    setMood(draft.mood || undefined);
+    if (draft.memoryDate) setMemoryDate(draft.memoryDate);
+    setLocation(draft.location || "");
+  }, []);
+
+  // Hook into draft management (with 10-second periodic auto-save)
+  const {
+    currentDraftId,
+    status: draftStatus,
+    lastSaved: draftLastSaved,
+    restoredDraft,
+    draftsCount,
+    saveDraftNow,
+    clearDraft,
+    discardCurrentDraft,
+    dismissRestoredNotice,
+  } = useJournalDraft({
+    draftId,
+    editId,
+    values: {
+      title,
+      description,
+      mood,
+      memoryDate,
+      location,
+    },
+    onRestore: handleRestoreDraft,
+    isInitialLoading: isLoadingEdit,
+  });
+
+  // Fetch memory if in edit mode
   React.useEffect(() => {
     if (editId) {
+      setIsLoadingEdit(true);
       getMemory(editId).then(data => {
         if (data) {
           setTitle(data.title || "");
@@ -48,9 +88,26 @@ function NewJournalForm() {
             setPreviews(data.memory_media.map((m: any) => m.url));
           }
         }
+      }).finally(() => {
+        setIsLoadingEdit(false);
       });
     }
   }, [editId]);
+
+  // Warn on accidental tab close if there is unsaved content
+  React.useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      const hasContent = Boolean(title.trim() || description.trim() || files.length);
+      if (hasContent && !isSubmitting) {
+        saveDraftNow();
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [title, description, files.length, isSubmitting, saveDraftNow]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -63,8 +120,6 @@ function NewJournalForm() {
   };
 
   const removeFile = (index: number) => {
-    // If it's an existing image, we don't have a file, but we should handle it.
-    // For simplicity, we just remove it from previews. True deletion from storage might need an extra step.
     if (index >= (previews.length - files.length)) {
       const fileIndex = index - (previews.length - files.length);
       setFiles((prev) => prev.filter((_, i) => i !== fileIndex));
@@ -81,6 +136,21 @@ function NewJournalForm() {
     setFiles((prev) => [...prev, file]);
     const src = URL.createObjectURL(file);
     setPreviews((prev) => [...prev, src]);
+  };
+
+  // Discard draft completely
+  const handleDiscardDraft = () => {
+    discardCurrentDraft();
+    setTitle("");
+    setDescription("");
+    setMood(undefined);
+    setLocation("");
+    setMemoryDate(new Date().toISOString().split('T')[0]);
+  };
+
+  const handleBack = () => {
+    saveDraftNow();
+    router.back();
   };
 
   const handleSave = async () => {
@@ -117,6 +187,9 @@ function NewJournalForm() {
         await uploadMemoryMedia(memory.id, mediaFormData);
       }
 
+      // Memory saved successfully! Clear the draft from local storage
+      clearDraft();
+
       clearInterval(interval);
       setProgress(100);
       setLoadingText("Safely tucked away! ✨");
@@ -136,13 +209,13 @@ function NewJournalForm() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <header className="px-4 pt-12 pb-4 sticky top-0 bg-background z-10 flex items-center justify-between border-b border-border/30">
-        <div className="flex items-center gap-2">
-          <IconButton variant="ghost" onClick={() => router.back()} className="-ml-2">
+      <header className="px-4 pt-12 pb-4 sticky top-0 bg-background/95 backdrop-blur-md z-10 flex items-center justify-between border-b border-border/30 gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <IconButton variant="ghost" onClick={handleBack} className="-ml-2 shrink-0">
             <ArrowLeft className="w-5 h-5" />
           </IconButton>
           
-          <div className="flex items-center text-muted-foreground bg-muted/50 rounded-full px-3 py-1">
+          <div className="flex items-center text-muted-foreground bg-muted/50 rounded-full px-3 py-1 shrink-0">
             <Calendar className="w-4 h-4 mr-2" />
             <input 
               type="date"
@@ -152,18 +225,52 @@ function NewJournalForm() {
             />
           </div>
         </div>
-        <Button 
-          size="sm" 
-          onClick={handleSave} 
-          disabled={isSubmitting || (!description.trim() && !files.length && !title.trim())}
-          className="rounded-full h-8 px-4 text-xs"
-        >
-          {isSubmitting ? "Saving..." : "Save"}
-        </Button>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              saveDraftNow();
+              router.push("/journal/drafts");
+            }}
+            title="View all drafts"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium text-muted-foreground hover:text-foreground bg-muted/50 hover:bg-muted border border-border/40 transition-colors cursor-pointer"
+          >
+            <FolderOpen className="w-3.5 h-3.5 text-primary" />
+            <span className="hidden sm:inline">Drafts</span>
+            {draftsCount > 0 && (
+              <span className="inline-flex items-center justify-center px-1.5 py-0.2 rounded-full bg-primary/20 text-primary text-[10px] font-bold">
+                {draftsCount}
+              </span>
+            )}
+          </button>
+
+          <DraftStatusBadge
+            status={draftStatus}
+            lastSaved={draftLastSaved}
+            onSaveNow={saveDraftNow}
+          />
+          <Button 
+            size="sm" 
+            onClick={handleSave} 
+            disabled={isSubmitting || (!description.trim() && !files.length && !title.trim())}
+            className="rounded-full h-8 px-4 text-xs font-medium cursor-pointer"
+          >
+            {isSubmitting ? "Saving..." : "Save"}
+          </Button>
+        </div>
       </header>
 
+      {/* Restored draft notice */}
+      {restoredDraft && (
+        <DraftBanner
+          updatedAt={restoredDraft.updatedAt}
+          onDiscard={handleDiscardDraft}
+          onDismiss={dismissRestoredNotice}
+        />
+      )}
+
       <main className="flex-1 flex flex-col px-6 py-6 overflow-y-auto">
-        
         <input 
           type="text" 
           value={title}
@@ -187,7 +294,7 @@ function NewJournalForm() {
                 <img src={src} alt="Preview" className="object-cover w-full h-full" />
                 <button 
                   onClick={() => removeFile(idx)}
-                  className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 hover:bg-black/70"
+                  className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 hover:bg-black/70 cursor-pointer"
                 >
                   <X className="w-3 h-3" />
                 </button>
