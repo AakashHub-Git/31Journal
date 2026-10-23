@@ -10,6 +10,7 @@ import { motion } from "framer-motion";
 import { staggerContainer, staggerItem } from "@/lib/animations";
 import { MemoryCard } from "@/components/features/memory/memory-card";
 import { MonthlyWrappedCard } from "@/components/features/ai/monthly-wrapped-card";
+import { MixtapeCard, MixtapeItem } from "@/components/features/audio/mixtape-card";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function ClientHome({ memories, userName }: { memories: any[], userName: string }) {
@@ -39,6 +40,21 @@ export function ClientHome({ memories, userName }: { memories: any[], userName: 
 
   const onThisDayMemory = onThisDayMemories.length > 0 ? onThisDayMemories[0] : undefined;
 
+  // Extract all voice tapes from memories
+  const voiceTapes: MixtapeItem[] = React.useMemo(() => {
+    return memories.flatMap(memory => {
+      return (memory.memory_media || [])
+        .filter((m: any) => m.url.includes("audio_") || m.url.endsWith(".webm") || m.url.endsWith(".mp3") || m.url.endsWith(".m4a"))
+        .map((m: any) => ({
+          id: m.id,
+          url: m.url,
+          memoryId: memory.id,
+          title: memory.title || "Side A • Sweety's Voice",
+          date: memory.memory_date,
+        }));
+    });
+  }, [memories]);
+
   // Helper to map DB memory to MemoryCard props
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapMemory = (memory: any) => ({
@@ -47,7 +63,7 @@ export function ClientHome({ memories, userName }: { memories: any[], userName: 
     description: memory.description || "",
     date: memory.memory_date,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    photos: (memory.memory_media || []).filter((m: any) => m.type === 'image').map((m: any) => ({
+    photos: (memory.memory_media || []).filter((m: any) => !m.url.includes("audio_") && !m.url.endsWith(".webm") && !m.url.endsWith(".mp3") && !m.url.endsWith(".m4a") && m.type === 'image').map((m: any) => ({
       id: m.id,
       url: m.url,
       width: 800,
@@ -97,7 +113,14 @@ export function ClientHome({ memories, userName }: { memories: any[], userName: 
           <MonthlyWrappedCard />
         </motion.section>
 
-        {/* 2. Primary Action */}
+        {/* 2. Sweety's Mixtape Card */}
+        {voiceTapes.length > 0 && (
+          <motion.section variants={staggerItem}>
+            <MixtapeCard tapes={voiceTapes} />
+          </motion.section>
+        )}
+
+        {/* 3. Primary Action */}
         <motion.section variants={staggerItem}>
           <Link href="/journal/new" className="block w-full">
             <motion.div 
@@ -111,7 +134,7 @@ export function ClientHome({ memories, userName }: { memories: any[], userName: 
           </Link>
         </motion.section>
 
-        {/* 3. Recent Memories */}
+        {/* 4. Recent Memories */}
         <motion.section variants={staggerItem} className="flex flex-col gap-4">
           <div className="flex justify-between items-end pl-1">
             <h2 className="text-xl font-medium tracking-tight">Recent Memories</h2>
@@ -131,21 +154,21 @@ export function ClientHome({ memories, userName }: { memories: any[], userName: 
           )}
         </motion.section>
 
-        {/* 4. On This Day */}
+        {/* 5. On This Day */}
         <motion.section variants={staggerItem} className="flex flex-col gap-4">
           <h2 className="text-xl font-medium tracking-tight pl-1">On this day</h2>
           
           {onThisDayMemory ? (
             <div className="flex flex-col gap-4">
               <p className="text-sm font-medium text-primary uppercase tracking-widest pl-1">
-                {currentYear - parseInt(onThisDayMemory.memory_date.split('-')[0], 10)} year(s) ago
+                A trip down memory lane
               </p>
-              <MemoryCard memory={mapMemory(onThisDayMemory)} priority={true} />
+              <MemoryCard memory={mapMemory(onThisDayMemory)} priority />
             </div>
           ) : (
-            <div className="py-8 bg-secondary/10 rounded-xl border border-secondary/20 text-center px-4">
-              <p className="text-muted-foreground font-handwriting text-xl leading-relaxed">
-                This space will hold your memories from today, next year.
+            <div className="py-8 border border-border/50 rounded-xl text-center bg-card">
+              <p className="text-muted-foreground font-handwriting text-xl">
+                No past memories for this day yet.
               </p>
             </div>
           )}

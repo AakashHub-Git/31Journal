@@ -6,8 +6,8 @@ import { ArrowLeft, MapPin } from "lucide-react";
 import Link from "next/link";
 import { Mood } from "@/types";
 import { ClientJournalView } from "./client-journal-view";
-
 import { JournalOptions } from "@/components/features/journal/journal-options";
+import { CassettePlayer } from "@/components/features/audio/cassette-player";
 
 const MOOD_EMOJIS: Record<string, string> = {
   happy: "😊",
@@ -49,14 +49,23 @@ export default async function JournalEntryPage({
     redirect("/journal");
   }
 
+  // Detect audio media tape vs photos
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const photos = (memory.memory_media || []).filter((m: any) => m.type === 'image').map((m: any) => ({
-    id: m.id,
-    url: m.url,
-    width: 800,
-    height: 800,
-    dateAdded: memory.memory_date
-  }));
+  const allMedia = memory.memory_media || [];
+  const audioMedia = allMedia.find((m: any) => 
+    m.url.includes("audio_") || m.url.endsWith(".webm") || m.url.endsWith(".mp3") || m.url.endsWith(".m4a")
+  );
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const photos = allMedia
+    .filter((m: any) => !m.url.includes("audio_") && !m.url.endsWith(".webm") && !m.url.endsWith(".mp3") && !m.url.endsWith(".m4a") && m.type === 'image')
+    .map((m: any) => ({
+      id: m.id,
+      url: m.url,
+      width: 800,
+      height: 800,
+      dateAdded: memory.memory_date
+    }));
 
   const memoryData = {
     id: memory.id,
@@ -103,6 +112,18 @@ export default async function JournalEntryPage({
             </div>
           )}
         </div>
+
+        {/* Retro Cassette Tape Centerpiece */}
+        {audioMedia && (
+          <div className="my-2 animate-in zoom-in-95 duration-300">
+            <CassettePlayer
+              audioUrl={audioMedia.url}
+              title={memoryData.title ? `Side A • ${memoryData.title}` : "Side A • Sweety's Voice"}
+              date={memoryData.date}
+              tapeColor="pink"
+            />
+          </div>
+        )}
 
         {memoryData.description && (
           <p className="text-lg leading-relaxed text-foreground/90 whitespace-pre-wrap">

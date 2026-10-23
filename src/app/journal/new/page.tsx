@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { IconButton } from "@/components/ui/icon-button";
 import { Button } from "@/components/ui/button";
 import { MoodSelector } from "@/components/features/mood-selector";
-import { ArrowLeft, Image as ImageIcon, MapPin, Tag, Calendar, X, Camera, FolderOpen } from "lucide-react";
+import { ArrowLeft, Image as ImageIcon, MapPin, Tag, Calendar, X, Camera, FolderOpen, Mic } from "lucide-react";
 import { Mood, JournalDraft } from "@/types";
 import { createMemory, updateMemory, getMemory } from "@/app/actions/journal";
 import { uploadMemoryMedia } from "@/app/actions/storage";
@@ -14,6 +14,8 @@ import { JournalCamera } from "@/components/camera/JournalCamera";
 import { useJournalDraft } from "@/hooks/use-journal-draft";
 import { DraftStatusBadge } from "@/components/features/journal/draft-status-badge";
 import { DraftBanner } from "@/components/features/journal/draft-banner";
+import { VoiceRecorderModal } from "@/components/features/audio/voice-recorder-modal";
+import { CassettePlayer } from "@/components/features/audio/cassette-player";
 import { Suspense } from "react";
 
 function NewJournalForm() {
@@ -31,6 +33,11 @@ function NewJournalForm() {
   const [files, setFiles] = React.useState<File[]>([]);
   const [previews, setPreviews] = React.useState<string[]>([]);
   
+  // Audio state
+  const [audioFile, setAudioFile] = React.useState<File | null>(null);
+  const [audioPreviewUrl, setAudioPreviewUrl] = React.useState<string | null>(null);
+  const [isAudioRecorderOpen, setIsAudioRecorderOpen] = React.useState(false);
+
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [progress, setProgress] = React.useState(0);
   const [loadingText, setLoadingText] = React.useState("Saving memory...");
@@ -85,7 +92,17 @@ function NewJournalForm() {
           setLocation(data.location || "");
           
           if (data.memory_media) {
-            setPreviews(data.memory_media.map((m: any) => m.url));
+            // Separate photos and audio
+            const imagePreviews: string[] = [];
+            data.memory_media.forEach((m: any) => {
+              const isAudio = m.url.includes("audio_") || m.url.endsWith(".webm") || m.url.endsWith(".mp3") || m.url.endsWith(".m4a");
+              if (isAudio) {
+                setAudioPreviewUrl(m.url);
+              } else {
+                imagePreviews.push(m.url);
+              }
+            });
+            setPreviews(imagePreviews);
           }
         }
       }).finally(() => {
@@ -97,7 +114,7 @@ function NewJournalForm() {
   // Warn on accidental tab close if there is unsaved content
   React.useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      const hasContent = Boolean(title.trim() || description.trim() || files.length);
+      const hasContent = Boolean(title.trim() || description.trim() || files.length || audioFile);
       if (hasContent && !isSubmitting) {
         saveDraftNow();
         e.preventDefault();
@@ -107,7 +124,7 @@ function NewJournalForm() {
 
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [title, description, files.length, isSubmitting, saveDraftNow]);
+  }, [title, description, files.length, audioFile, isSubmitting, saveDraftNow]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -138,9 +155,25 @@ function NewJournalForm() {
     setPreviews((prev) => [...prev, src]);
   };
 
+  // Voice recording handlers
+  const handleSaveAudio = (file: File) => {
+    setAudioFile(file);
+    const url = URL.createObjectURL(file);
+    setAudioPreviewUrl(url);
+  };
+
+  const handleRemoveAudio = () => {
+    if (audioPreviewUrl && audioPreviewUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(audioPreviewUrl);
+    }
+    setAudioFile(null);
+    setAudioPreviewUrl(null);
+  };
+
   // Discard draft completely
   const handleDiscardDraft = () => {
     discardCurrentDraft();
+    handleRemoveAudio();
     setTitle("");
     setDescription("");
     setMood(undefined);
@@ -154,7 +187,7 @@ function NewJournalForm() {
   };
 
   const handleSave = async () => {
-    if (!description.trim() && !files.length && !title.trim() && !previews.length) return;
+    if (!description.trim() && !files.length && !title.trim() && !previews.length && !audioPreviewUrl && !audioFile) return;
     
     setIsSubmitting(true);
     setProgress(10);
@@ -176,11 +209,16 @@ function NewJournalForm() {
         ? await updateMemory(editId, formData)
         : await createMemory(formData);
       
-      if (files.length > 0 && memory?.id) {
+      const allUploadFiles = [...files];
+      if (audioFile) {
+        allUploadFiles.push(audioFile);
+      }
+
+      if (allUploadFiles.length > 0 && memory?.id) {
         setProgress(40);
-        setLoadingText("Uploading your photos...");
+        setLoadingText(audioFile ? "Tucking away your photos & voice tape..." : "Uploading your photos...");
         const mediaFormData = new FormData();
-        files.forEach((file) => {
+        allUploadFiles.forEach((file) => {
           mediaFormData.append("files", file);
         });
         
@@ -253,7 +291,7 @@ function NewJournalForm() {
           <Button 
             size="sm" 
             onClick={handleSave} 
-            disabled={isSubmitting || (!description.trim() && !files.length && !title.trim())}
+            disabled={isSubmitting || (!description.trim() && !files.length && !title.trim() && !audioPreviewUrl)}
             className="rounded-full h-8 px-4 text-xs font-medium cursor-pointer"
           >
             {isSubmitting ? "Saving..." : "Save"}
@@ -279,11 +317,27 @@ function NewJournalForm() {
           className="text-3xl font-medium bg-transparent border-none focus:outline-none placeholder:text-muted-foreground/30 mb-6"
         />
 
+        {/* Attached Voice Tape Preview */}
+        {audioPreviewUrl && (
+          <div className="mb-6 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-muted-foreground">Attached Voice Tape</span>
+            </div>
+            <CassettePlayer
+              audioUrl={audioPreviewUrl}
+              title={title.trim() || "Side A • Sweety's Voice"}
+              date={memoryDate}
+              tapeColor="pink"
+              onDelete={handleRemoveAudio}
+            />
+          </div>
+        )}
+
         <textarea 
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="What's on your mind?"
-          className="flex-1 w-full bg-transparent border-none focus:outline-none placeholder:text-muted-foreground/50 resize-none text-lg leading-relaxed min-h-[250px]"
+          className="flex-1 w-full bg-transparent border-none focus:outline-none placeholder:text-muted-foreground/50 resize-none text-lg leading-relaxed min-h-[200px]"
         />
 
         {/* Image Previews */}
@@ -325,12 +379,23 @@ function NewJournalForm() {
 
           <div className="flex flex-wrap gap-3">
             <button 
+              type="button"
+              onClick={() => setIsAudioRecorderOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-full border border-rose-300/80 bg-rose-50/80 dark:bg-rose-950/40 text-rose-600 dark:text-rose-300 text-sm font-medium hover:bg-rose-100/80 transition-colors cursor-pointer shadow-xs"
+            >
+              <Mic className="w-4 h-4" />
+              {audioPreviewUrl ? "Re-record Voice" : "Record Voice Note"}
+            </button>
+
+            <button 
+              type="button"
               onClick={() => setIsCameraOpen(true)}
               className="flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors cursor-pointer"
             >
               <Camera className="w-4 h-4" />
               Take Photo
             </button>
+
             <label className="flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-card text-sm font-medium hover:bg-muted transition-colors cursor-pointer">
               <ImageIcon className="w-4 h-4 text-primary" />
               Upload Photo
@@ -342,7 +407,8 @@ function NewJournalForm() {
                 className="hidden" 
               />
             </label>
-            <button className="flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-card text-sm font-medium hover:bg-muted transition-colors">
+
+            <button type="button" className="flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-card text-sm font-medium hover:bg-muted transition-colors">
               <Tag className="w-4 h-4 opacity-70" />
               Tags
             </button>
@@ -376,6 +442,14 @@ function NewJournalForm() {
           <p className="mt-3 text-sm text-muted-foreground font-medium">{Math.floor(Math.min(progress, 100))}%</p>
         </div>
       )}
+
+      {/* Voice Recorder Modal */}
+      <VoiceRecorderModal
+        open={isAudioRecorderOpen}
+        onClose={() => setIsAudioRecorderOpen(false)}
+        onSaveAudio={handleSaveAudio}
+        titleHint={title.trim() || "Side A • Sweety's Voice"}
+      />
 
       <JournalCamera 
         open={isCameraOpen}
