@@ -1,4 +1,5 @@
 import { getMemories } from "./actions/journal";
+import { getDreamItems } from "./actions/dreams";
 import { ClientHome } from "./client-home";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
@@ -11,7 +12,10 @@ export default async function RootPage() {
     redirect("/login");
   }
 
-  const memories = await getMemories();
+  const [memories, dreams] = await Promise.all([
+    getMemories(),
+    getDreamItems(),
+  ]);
   
   // Try to get name from profile
   let userName = "Sweetttyyy";
@@ -23,5 +27,5 @@ export default async function RootPage() {
     userName = profile.name;
   }
   
-  return <ClientHome memories={memories} userName={userName} />;
+  return <ClientHome memories={memories} userName={userName} dreams={dreams} />;
 }

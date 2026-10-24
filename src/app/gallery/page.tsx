@@ -1,5 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
+import { Suspense } from "react";
 import { getMemories } from "@/app/actions/journal";
 import { ClientGallery } from "./client-gallery";
 
@@ -43,5 +44,9 @@ export default async function GalleryPage() {
       }));
   });
 
-  return <ClientGallery photos={photos} voiceTapes={voiceTapes} />;
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading gallery...</div>}>
+      <ClientGallery photos={photos} voiceTapes={voiceTapes} />
+    </Suspense>
+  );
 }

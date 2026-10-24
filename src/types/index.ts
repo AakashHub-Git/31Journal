@@ -87,3 +87,18 @@ export interface JournalDraft {
   updatedAt: number;
   editMemoryId?: string;
 }
+
+export type DreamCategory = "travel" | "food" | "adventures" | "goals";
+
+export interface DreamItem {
+  id: string;
+  user_id?: string;
+  title: string;
+  category: DreamCategory;
+  description?: string;
+  is_completed: boolean;
+  completed_at?: string;
+  photo_url?: string;
+  created_at?: string;
+}
+

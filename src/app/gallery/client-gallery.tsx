@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/features/page-header";
 import { PhotoMemory } from "@/components/features/memory/photo-memory";
 import { PhotoViewer } from "@/components/features/memory/photo-viewer";
@@ -38,8 +39,17 @@ export function ClientGallery({
   photos: GalleryPhoto[];
   voiceTapes?: GalleryVoiceTape[];
 }) {
-  const [activeTab, setActiveTab] = React.useState<"photos" | "tapes">("photos");
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get("tab") === "tapes" ? "tapes" : "photos";
+  const [activeTab, setActiveTab] = React.useState<"photos" | "tapes">(initialTab);
   const [activePhoto, setActivePhoto] = React.useState<Photo | null>(null);
+
+  React.useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam === "tapes" || tabParam === "photos") {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
   
   const [searchQuery, setSearchQuery] = React.useState("");
   const [moodFilter, setMoodFilter] = React.useState<Mood | "all">("all");

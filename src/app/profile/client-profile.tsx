@@ -3,7 +3,7 @@
 import * as React from "react";
 import Image from "next/image";
 import { Section } from "@/components/ui/section";
-import { Bell, Shield, Palette, Sparkles, Type, Square, Play, ArrowLeft } from "lucide-react";
+import { Bell, Shield, Palette, Sparkles, Type, Square, Play, ArrowLeft, Trophy, ChevronRight } from "lucide-react";
 import { LogoutButton } from "./logout-button";
 import Link from "next/link";
 import { IconButton } from "@/components/ui/icon-button";
@@ -148,6 +148,16 @@ export function ClientProfile({ displayName, joinedDate, memoriesCount, mediaCou
         <motion.div variants={staggerItem}>
           <Section>
             <div className="flex flex-col rounded-2xl bg-card border border-border/50 overflow-hidden shadow-sm">
+              <Link href="/dreams" className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors text-left w-full group">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-amber-100 dark:bg-amber-950/60 rounded-full text-amber-600 dark:text-amber-300 group-hover:scale-105 transition-transform">
+                    <Trophy className="w-4 h-4" />
+                  </div>
+                  <span className="font-medium text-foreground">Sweety&apos;s Dream Board</span>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+              <div className="h-px w-full bg-border/50" />
               <button className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors text-left w-full group">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-muted rounded-full group-hover:bg-primary/10 transition-colors"><Bell className="w-4 h-4 text-muted-foreground group-hover:text-primary" /></div>
